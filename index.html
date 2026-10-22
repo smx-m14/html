@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor HTML</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Barra superior -->
+  <header class="topbar">
+    <div class="brand">&lt;/&gt; Editor HTML</div>
+    <div class="group">
+      <button data-action="new" title="Nuevo documento">Nuevo</button>
+      <button data-action="open" title="Abrir archivo (Ctrl+O)">Abrir</button>
+      <button data-action="save" title="Guardar (Ctrl+S)">Guardar</button>
+      <button data-action="saveAs" title="Guardar como…">Guardar como</button>
+    </div>
+    <div class="group">
+      <button data-action="format" title="Formatear / indentar código">Formatear</button>
+      <button data-action="clean" class="accent" title="Opciones de limpieza">🧹 Limpiar…</button>
+      <button data-action="preview" title="Abrir vista previa con scripts activos">▶ Vista previa</button>
+    </div>
+    <div class="group layout" role="group" aria-label="Diseño">
+      <button data-layout="visual" title="Sólo editor visual">Visual</button>
+      <button data-layout="split" class="active" title="Dividido">Dividido</button>
+      <button data-layout="code" title="Sólo código">Código</button>
+    </div>
+    <div class="filename" id="filename">sin título.html</div>
+    <input type="file" id="fileInput" accept=".html,.htm,.xhtml,.txt,text/html" hidden>
+  </header>
+
+  <main class="workspace" id="workspace">
+
+    <!-- Editor visual (WYSIWYG) -->
+    <section class="pane pane-visual" id="paneVisual">
+      <div class="toolbar" id="visualToolbar">
+        <button data-cmd="undo" title="Deshacer">↶</button>
+        <button data-cmd="redo" title="Rehacer">↷</button>
+        <span class="sep"></span>
+        <select data-cmd="formatBlock" title="Tipo de bloque">
+          <option value="">Bloque…</option>
+          <option value="p">Párrafo</option>
+          <option value="h1">Título 1</option>
+          <option value="h2">Título 2</option>
+          <option value="h3">Título 3</option>
+          <option value="h4">Título 4</option>
+          <option value="h5">Título 5</option>
+          <option value="h6">Título 6</option>
+          <option value="pre">Preformateado</option>
+          <option value="blockquote">Cita</option>
+          <option value="div">Div</option>
+        </select>
+        <span class="sep"></span>
+        <button data-cmd="bold" title="Negrita (Ctrl+B)"><b>B</b></button>
+        <button data-cmd="italic" title="Cursiva (Ctrl+I)"><i>I</i></button>
+        <button data-cmd="underline" title="Subrayado (Ctrl+U)"><u>U</u></button>
+        <button data-cmd="strikeThrough" title="Tachado"><s>S</s></button>
+        <button data-cmd="superscript" title="Superíndice">x²</button>
+        <button data-cmd="subscript" title="Subíndice">x₂</button>
+        <label class="color" title="Color de texto">A<input type="color" data-cmd="foreColor" value="#c0392b"></label>
+        <label class="color bg" title="Color de fondo">▇<input type="color" data-cmd="hiliteColor" value="#fff3a0"></label>
+        <span class="sep"></span>
+        <button data-cmd="insertUnorderedList" title="Lista con viñetas">• ≡</button>
+        <button data-cmd="insertOrderedList" title="Lista numerada">1. ≡</button>
+        <button data-cmd="outdent" title="Reducir sangría">⇤</button>
+        <button data-cmd="indent" title="Aumentar sangría">⇥</button>
+        <span class="sep"></span>
+        <button data-cmd="justifyLeft" title="Alinear a la izquierda">⯇</button>
+        <button data-cmd="justifyCenter" title="Centrar">≡</button>
+        <button data-cmd="justifyRight" title="Alinear a la derecha">⯈</button>
+        <button data-cmd="justifyFull" title="Justificar">☰</button>
+        <span class="sep"></span>
+        <button data-cmd="createLink" title="Insertar enlace">🔗</button>
+        <button data-cmd="unlink" title="Quitar enlace">⛓̸</button>
+        <button data-cmd="insertImage" title="Insertar imagen">🖼</button>
+        <button data-cmd="insertTable" title="Insertar tabla">▦</button>
+        <button data-cmd="insertHorizontalRule" title="Línea horizontal">―</button>
+        <span class="sep"></span>
+        <button data-cmd="removeFormat" title="Quitar formato de la selección">T̸</button>
+        <button data-cmd="deleteElement" title="Eliminar el elemento seleccionado en la ruta">✕ elem.</button>
+      </div>
+      <div class="frame-wrap">
+        <iframe id="visualFrame" title="Editor visual" sandbox="allow-same-origin"></iframe>
+      </div>
+      <div class="statusbar">
+        <div class="breadcrumb" id="breadcrumb"><span class="muted">Haz clic en el contenido para ver la ruta del elemento</span></div>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" title="Arrastra para redimensionar"></div>
+
+    <!-- Editor de código -->
+    <section class="pane pane-code" id="paneCode">
+      <div class="toolbar">
+        <span class="label">HTML</span>
+        <span class="sep"></span>
+        <button data-code="search" title="Buscar (Ctrl+F)">Buscar</button>
+        <button data-code="replace" title="Reemplazar (Shift+Ctrl+F)">Reemplazar</button>
+        <button data-code="fold" title="Plegar/desplegar todo">Plegar</button>
+        <button data-code="wrap" title="Ajuste de línea">Ajuste</button>
+        <button data-code="copy" title="Copiar todo el código">Copiar</button>
+        <span class="spacer"></span>
+        <span class="muted" id="codeStats"></span>
+      </div>
+      <div class="code-wrap" id="codeWrap"></div>
+    </section>
+  </main>
+
+  <!-- Diálogo de limpieza -->
+  <dialog id="cleanDialog" class="dialog">
+    <form method="dialog" id="cleanForm">
+      <h2>Limpiar código HTML</h2>
+      <p class="muted">Se aplica a todo el documento. Puedes deshacerlo con Ctrl+Z en el editor de código.</p>
+
+      <div class="presets">
+        <button type="button" data-preset="all">Todo</button>
+        <button type="button" data-preset="none">Nada</button>
+        <button type="button" data-preset="word">Pegado desde Word</button>
+        <button type="button" data-preset="semantic">HTML semántico limpio</button>
+      </div>
+
+      <div class="clean-grid">
+        <fieldset>
+          <legend>Atributos</legend>
+          <label><input type="checkbox" name="classes"> Eliminar clases <code>class</code></label>
+          <label><input type="checkbox" name="styles"> Eliminar estilos en línea <code>style</code></label>
+          <label><input type="checkbox" name="ids"> Eliminar <code>id</code></label>
+          <label><input type="checkbox" name="dataAttrs"> Eliminar <code>data-*</code></label>
+          <label><input type="checkbox" name="ariaAttrs"> Eliminar <code>aria-*</code> y <code>role</code></label>
+          <label><input type="checkbox" name="events"> Eliminar eventos <code>onclick</code>, <code>onload</code>…</label>
+          <label><input type="checkbox" name="presentational"> Eliminar atributos obsoletos <code>align</code>, <code>bgcolor</code>, <code>border</code>…</label>
+          <label><input type="checkbox" name="allAttrs"> Eliminar <strong>todos</strong> salvo los esenciales (<code>href</code>, <code>src</code>, <code>alt</code>…)</label>
+        </fieldset>
+        <fieldset>
+          <legend>Etiquetas y contenido</legend>
+          <label><input type="checkbox" name="scripts"> Eliminar <code>&lt;script&gt;</code> y <code>&lt;noscript&gt;</code></label>
+          <label><input type="checkbox" name="styleTags"> Eliminar <code>&lt;style&gt;</code> y hojas <code>&lt;link rel=stylesheet&gt;</code></label>
+          <label><input type="checkbox" name="comments"> Eliminar comentarios <code>&lt;!-- --&gt;</code></label>
+          <label><input type="checkbox" name="unwrapSpans"> Quitar <code>&lt;span&gt;</code> (mantiene el texto)</label>
+          <label><input type="checkbox" name="unwrapFont"> Quitar <code>&lt;font&gt;</code> (mantiene el texto)</label>
+          <label><input type="checkbox" name="emptyTags"> Eliminar etiquetas vacías</label>
+          <label><input type="checkbox" name="nbsp"> Convertir <code>&amp;nbsp;</code> en espacios</label>
+          <label><input type="checkbox" name="word"> Limpiar restos de Word / Office (<code>mso-</code>, <code>o:p</code>…)</label>
+          <label class="danger"><input type="checkbox" name="plainText"> Convertir a texto plano (elimina todas las etiquetas del body)</label>
+        </fieldset>
+      </div>
+
+      <label class="after"><input type="checkbox" id="formatAfterClean" checked> Formatear el código después de limpiar</label>
+
+      <div class="dialog-actions">
+        <button value="cancel" formnovalidate>Cancelar</button>
+        <button value="apply" class="accent" id="applyClean">Aplicar limpieza</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchtags.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/xml-fold.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emmetio/codemirror-plugin@1.2.4/dist/browser.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js"></script>
+
+  <script src="js/cleaner.js"></script>
+  <script src="js/sample.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
